@@ -19,7 +19,7 @@ reqwest = { version = "0.13", features = ["blocking", "json"] }
 tokio = { version = "1.52", features = ["full"] }
 roxmltree = "0.21"
 log = "0.4"
-base64 = "0.22"
+base64 = "0.23"
 
 # Local libs
 eam_commons = { path = "../eam_commons" }
