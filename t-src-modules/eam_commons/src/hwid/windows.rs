@@ -2,10 +2,11 @@ use std::collections::HashMap;
 
 pub async fn get_device_unique_identifier() -> Result<String, String> {
     use sha1::{Digest, Sha1};
-    use wmi::{COMLibrary, Variant, WMIConnection};
+    use wmi::{Variant, WMIConnection};
 
-    let com_con = COMLibrary::new().map_err(|e| e.to_string())?;
-    let wmi_con = WMIConnection::new(com_con.into()).map_err(|e| e.to_string())?;
+    // wmi 0.18 removed `COMLibrary`; COM is initialized internally and
+    // `WMIConnection::new()` still defaults to the `ROOT\CIMV2` namespace.
+    let wmi_con = WMIConnection::new().map_err(|e| e.to_string())?;
 
     let mut concat_str = String::new();
 
