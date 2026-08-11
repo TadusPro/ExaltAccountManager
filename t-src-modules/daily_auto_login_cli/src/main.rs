@@ -674,10 +674,11 @@ async fn send_post_request_with_form_url_encoded_data(
 
 async fn get_device_unique_identifier() -> Result<String, String> {
     use sha1::{Digest, Sha1};
-    use wmi::{COMLibrary, Variant, WMIConnection};
+    use wmi::{Variant, WMIConnection};
 
-    let com_con = COMLibrary::new().map_err(|e| e.to_string())?;
-    let wmi_con = WMIConnection::new(com_con.into()).map_err(|e| e.to_string())?;
+    // wmi 0.18 removed `COMLibrary`; COM is initialized internally and
+    // `WMIConnection::new()` still defaults to the `ROOT\CIMV2` namespace.
+    let wmi_con = WMIConnection::new().map_err(|e| e.to_string())?;
 
     let mut concat_str = String::new();
 
@@ -711,7 +712,9 @@ async fn get_device_unique_identifier() -> Result<String, String> {
     let mut hasher = Sha1::new();
     hasher.update(concat_str);
     let result = hasher.finalize();
-    let hashed = format!("{:x}", result);
+    // sha1 0.11's digest output no longer implements `LowerHex`; format per byte
+    // instead (same lowercase, zero-padded output as the previous `{:x}`).
+    let hashed = result.iter().map(|b| format!("{:02x}", b)).collect::<String>();
 
     Ok(hashed)
 }
