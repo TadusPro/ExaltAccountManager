@@ -1,13 +1,19 @@
-import items from "./constants";
+export const items = {};
 
 let runtimeManifest = null;
 
 /**
  * Applies extractor output to the objects that the existing EAM components
- * already import. This keeps the bundled assets as a safe offline fallback.
+ * already import. There is intentionally no bundled item fallback.
  */
 export function mergeRuntimeAssets(manifest) {
-    if (!manifest || typeof manifest !== "object" || !manifest.items) {
+    if (
+        !manifest
+        || typeof manifest !== "object"
+        || !manifest.items
+        || !manifest.renderSheetDataUrl
+        || !manifest.buildHash
+    ) {
         return false;
     }
 
@@ -16,14 +22,17 @@ export function mergeRuntimeAssets(manifest) {
     return true;
 }
 export function getRuntimeAssetCacheKey() {
-    return runtimeManifest?.buildHash || "bundled";
+    return runtimeManifest?.buildHash || "unavailable";
 }
 
 export function resolveRuntimeAssetSource(source) {
     if (
-        runtimeManifest?.renderSheetDataUrl
-        && (source === "renders.png" || source === "/renders.png")
+        source === "renders.png"
+        || source === "/renders.png"
     ) {
+        if (!runtimeManifest?.renderSheetDataUrl) {
+            throw new Error("Live item render assets have not been loaded.");
+        }
         return runtimeManifest.renderSheetDataUrl;
     }
 

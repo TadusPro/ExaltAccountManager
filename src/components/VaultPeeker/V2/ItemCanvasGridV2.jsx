@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback, useLayoutEffect } from 'react';
 import { Box, Tooltip } from '@mui/material';
-import items from '../../../assets/constants';
+import { items } from '../../../assets/runtimeAssets';
 import { drawItemPromise, getItemRarity } from '../../../utils/realmItemDrawUtils';
 import { TooltipUiForItem } from '../../Widgets/Widgets/Components/InventoryRender';
 import useVaultPeeker from '../../../hooks/useVaultPeeker';

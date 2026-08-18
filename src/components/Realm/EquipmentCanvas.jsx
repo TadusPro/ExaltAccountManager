@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import itemsSlotTypeMap from "../../assets/slotmap";
-import items, { classes } from "../../assets/constants";
+import { classes } from "../../assets/constants";
+import { items } from "../../assets/runtimeAssets";
 import { drawItem, drawItemAsync } from "../../utils/realmItemDrawUtils";
 import { Box } from "@mui/material";
 import useItemCanvas from "../../hooks/useItemCanvas";

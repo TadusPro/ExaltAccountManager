@@ -10,11 +10,25 @@ import { refreshRuntimeAssets } from "./backend/assetApi";
 function App() {
     const [hasTriggeredStartup, setHasTriggeredStartup] = useState(false);
     const [assetsReady, setAssetsReady] = useState(false);
+    const [assetError, setAssetError] = useState(null);
+    const [assetRetry, setAssetRetry] = useState(0);
     const { hwid } = useHWID();
 
     useEffect(() => {
         onStartUp();
-        refreshRuntimeAssets().finally(() => setAssetsReady(true));
+        let cancelled = false;
+        setAssetsReady(false);
+        setAssetError(null);
+        refreshRuntimeAssets()
+            .then(() => {
+                if (!cancelled) setAssetsReady(true);
+            })
+            .catch((error) => {
+                if (!cancelled) {
+                    setAssetsReady(true);
+                    setAssetError(error?.message || "Unable to load live game assets.");
+                }
+            });
         const getHearbetInterval = () => {
             return setInterval(async () => {
                 heartBeat();
@@ -44,11 +58,12 @@ function App() {
             });
 
         return () => {
+            cancelled = true;
             if (heartBeatInterval) {
                 clearInterval(heartBeatInterval);
             }
         };
-    }, []);
+    }, [assetRetry]);
 
     useEffect(() => {
         if (hasTriggeredStartup || !hwid) {
@@ -62,7 +77,21 @@ function App() {
     if (!assetsReady) {
         return (
             <div style={{ display: "grid", minHeight: "100vh", placeItems: "center", color: "#fff" }}>
-                Loading current game assets…
+                Downloading current game assets…
+            </div>
+        );
+    }
+
+    if (assetError) {
+        return (
+            <div style={{ display: "grid", gap: "1rem", minHeight: "100vh", placeItems: "center", color: "#fff", textAlign: "center" }}>
+                <div>
+                    <div>Live game assets are required to run EAM.</div>
+                    <div style={{ fontSize: "0.85rem", marginTop: "0.5rem", opacity: 0.75 }}>{assetError}</div>
+                </div>
+                <button type="button" onClick={() => setAssetRetry((value) => value + 1)}>
+                    Retry asset download
+                </button>
             </div>
         );
     }

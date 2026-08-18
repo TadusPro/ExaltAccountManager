@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Skeleton, Tooltip, Typography } from "@mui/material";
 import { useTheme } from "@emotion/react";
 import { drawItemAsync } from "../../../utils/realmItemDrawUtils";
-import items from "../../../assets/constants";
+import { items } from "../../../assets/runtimeAssets";
 import useVaultPeeker from "../../../hooks/useVaultPeeker";
 import { TooltipUiForItem } from "../../Widgets/Widgets/Components/InventoryRender";
 

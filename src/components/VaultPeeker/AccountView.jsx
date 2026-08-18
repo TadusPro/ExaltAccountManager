@@ -2,7 +2,7 @@ import { Avatar, AvatarGroup, Box, Collapse, IconButton, Paper, Skeleton, Toolti
 import ComponentBox from "../ComponentBox";
 import Character from "../Realm/Character";
 import ItemCanvas from "../Realm/ItemCanvas";
-import items from "../../assets/constants";
+import { items } from "../../assets/runtimeAssets";
 import useVaultPeeker from "../../hooks/useVaultPeeker";
 import { useEffect, useMemo, useState } from "react";
 import useUserSettings from "../../hooks/useUserSettings";

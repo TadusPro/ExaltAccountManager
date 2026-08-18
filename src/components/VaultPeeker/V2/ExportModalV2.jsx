@@ -25,7 +25,7 @@ import { save } from '@tauri-apps/plugin-dialog';
 import { writeFile } from '@tauri-apps/plugin-fs';
 import { useUserLogin } from 'eam-commons-js';
 import { drawItemAsync } from "../../../utils/realmItemDrawUtils";
-import items from "../../../assets/constants";
+import { items } from "../../../assets/runtimeAssets";
 import useVaultPeeker from "../../../hooks/useVaultPeeker";
 import { useNavigate } from "react-router-dom";
 

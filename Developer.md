@@ -53,7 +53,8 @@ EAM is a project with the following components:
     - On Windows, run `bun run assets:build:windows` from the project root.
     - This creates the Tauri sidecar at `src-tauri/binaries/eam-asset-extractor-x86_64-pc-windows-msvc.exe`.
     - The first EAM launch downloads the current Realm build and caches the generated manifest and render sheet in EAM's app-data directory.
-    - If the sidecar cannot run or the network is unavailable, EAM automatically uses its bundled assets.
+    - EAM requires live assets on first launch. After a successful extraction, the generated cache can be used when the network is temporarily unavailable.
+    - This live-only migration covers item metadata and item renders. Character portrait textile/skin sheets still use the existing portrait pipeline until the extractor exposes their mapping.
 
 6. **Run EAM in developer mode:**
     Run `bun run tauri dev` in the root of the project.

@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { classes } from "../../assets/constants";
 import { useTheme } from "@emotion/react";
 import ItemCanvas from "./ItemCanvas";
-import items from './../../assets/constants';
+import { items } from './../../assets/runtimeAssets';
 import EquipmentCanvas from "./EquipmentCanvas";
 import CharacterPortrait from "./CharacterPortrait";
 import useVaultPeeker from "../../hooks/useVaultPeeker";
