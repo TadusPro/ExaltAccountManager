@@ -1,4 +1,5 @@
 import { CACHE_PREFIX } from "../constants";
+import { getRuntimeAssetCacheKey, resolveRuntimeAssetSource } from "../assets/runtimeAssets";
 
 export const RARITY_IMAGE_SOURCES = {
     0: {
@@ -44,7 +45,8 @@ export const drawItemPromise = (imgSrc, item, rarity = 0, itemPadding = 5) => {
         }
 
         const isShiny = item[10];
-        const cacheKey = `${CACHE_PREFIX}drawItem:${imgSrc}-${item[3]}-${item[4]}-${rarity}-${itemPadding}-${isShiny ? 1 : 0}`;
+        const runtimeCacheKey = getRuntimeAssetCacheKey();
+        const cacheKey = `${CACHE_PREFIX}drawItem:${runtimeCacheKey}-${imgSrc}-${item[3]}-${item[4]}-${rarity}-${itemPadding}-${isShiny ? 1 : 0}`;
         const cachedData = localStorage.getItem(cacheKey);
         let cachedObject;
         if (cachedData) {
@@ -72,7 +74,7 @@ export const drawItemPromise = (imgSrc, item, rarity = 0, itemPadding = 5) => {
         const ctx = canvas.getContext("2d");
 
         const img = new Image();
-        img.src = imgSrc;
+        img.src = resolveRuntimeAssetSource(imgSrc);
 
         img.onload = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);

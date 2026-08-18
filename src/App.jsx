@@ -5,13 +5,16 @@ import useHWID from "./hooks/useHWID";
 import { heartBeat } from "./backend/eamApi";
 import MainProviders from "./MainProviders";
 import { invoke } from "@tauri-apps/api/core";
+import { refreshRuntimeAssets } from "./backend/assetApi";
 
 function App() {
     const [hasTriggeredStartup, setHasTriggeredStartup] = useState(false);
+    const [assetsReady, setAssetsReady] = useState(false);
     const { hwid } = useHWID();
 
     useEffect(() => {
         onStartUp();
+        refreshRuntimeAssets().finally(() => setAssetsReady(true));
         const getHearbetInterval = () => {
             return setInterval(async () => {
                 heartBeat();
@@ -55,6 +58,14 @@ function App() {
         setApiHwidHash(hwid);
         setHasTriggeredStartup(true);
     }, [hwid]);
+
+    if (!assetsReady) {
+        return (
+            <div style={{ display: "grid", minHeight: "100vh", placeItems: "center", color: "#fff" }}>
+                Loading current game assets…
+            </div>
+        );
+    }
 
     return (
         <ColorContextProvider>

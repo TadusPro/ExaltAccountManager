@@ -4,6 +4,7 @@ import { alpha, useTheme } from '@mui/material/styles';
 import { Box } from '@mui/material';
 import useItemCanvas from '../../hooks/useItemCanvas';
 import useVaultPeeker from '../../hooks/useVaultPeeker';
+import { resolveRuntimeAssetSource } from '../../assets/runtimeAssets';
 
 const ItemCanvas = ({ canvasIdentifier, itemIds, items, imgSrc, overrideItemImages = {}, totals = {}, filteredTotals = {}, override = {}, overrideTotals = null, filter = [], saveCanvas }) => {
     const canvasRef = useRef(null);
@@ -145,7 +146,7 @@ const ItemCanvas = ({ canvasIdentifier, itemIds, items, imgSrc, overrideItemImag
         }
 
         const img = new Image();
-        img.src = imgSrc;
+        img.src = resolveRuntimeAssetSource(imgSrc);
 
         const overrideImages = {};
         if (overrideItemImages) {

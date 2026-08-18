@@ -1,6 +1,8 @@
 //Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod asset_sync;
+
 extern crate dirs;
 
 use diesel::r2d2::ConnectionManager;
@@ -30,6 +32,7 @@ use eam_commons::toast_notifications::{
     content::EndOfMonthNotificationContent,
 };
 use serde::Serialize;
+use asset_sync::refresh_asset_cache;
 
 
 use chrono::{DateTime, TimeZone, Utc};
@@ -237,6 +240,7 @@ fn main() {
             create_folder,
             check_for_game_update,
             perform_game_update,
+            refresh_asset_cache,
             send_get_request, // HTTP Requests
             send_get_request_with_json_body,
             send_post_request,

@@ -1,0 +1,3 @@
+[submodule "t-src-modules/RotMGAssetExtractor"]
+	path = t-src-modules/RotMGAssetExtractor
+	url = https://github.com/TadusPro/RotMGAssetExtractor.git

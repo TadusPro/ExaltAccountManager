@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "assets:build": "powershell -ExecutionPolicy Bypass -File scripts/build-asset-extractor.ps1",
+    "assets:build:windows": "powershell -ExecutionPolicy Bypass -File scripts/build-asset-extractor.ps1 -RuntimeIdentifier win-x64 -TauriTarget x86_64-pc-windows-msvc"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.23.0",

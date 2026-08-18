@@ -24,27 +24,38 @@ EAM is a project with the following components:
 - **Node.js:** [Install Node.js](https://nodejs.org/en/download) for the React frontend.
 - **Bun**: [Bun](https://bun.sh/) is used as our runtime.
 - **.NET Framework 4.8:** Required for the C# sub-project. (Comes with windows)
+- **.NET 8 SDK:** Required to build the automatic game-asset extractor.
 - **Tauri CLI:** Install globally with `cargo install tauri-cli`.
 
 ## Setup Steps
 
-1. **Install JavaScript Dependencies:**  
+1. **Clone the repository with its extractor submodule:**
+   - Run `git clone --recurse-submodules https://github.com/MaikEight/ExaltAccountManager.git`.
+   - If you already cloned it without submodules, run `git submodule update --init --recursive`.
+
+2. **Install JavaScript Dependencies:**
    - Run either `npm i` or `bun i` in the project root.
    - Run either `npm i` or `bun i` in [t-src-modules/eam-commons-js](t-src-modules/eam-commons-js)
   
-2. **Link the eam-commons-js lib:**
+3. **Link the eam-commons-js lib:**
    - Build the lib using `npm run build` in [t-src-modules/eam-commons-js]
    - Run either `npm link` or `bun link` in [t-src-modules/eam-commons-js](t-src-modules/eam-commons-js)
    - Run either `npm link eam-commons-js` or `bun link eam-commons-js` in the project root
   
-3. **Build the included binaries (Windows only):**
+4. **Build the included binaries (Windows only):**
    - Create a new folder called `IncludedBinaries` at `src-tauri` resulting in a path like: [src-tauri/IncludedBinaries](src-tauri/IncludedBinaries)
    - Copy the `EAM_Save_File_Converter.exe` from your known source into [src-tauri/IncludedBinaries](src-tauri/IncludedBinaries)
    - Build the [EAM_Task_Installer](t-src-modules\EAM_Task_Installer) in `Release` mode.
   
     If you have trouble building the `EAM_Task_Installer` you can just copy the current existing versions from your[C:\Users\\%username%\AppData\Local\ExaltAccountManager\v4](C:\Users\\%username%\AppData\Local\ExaltAccountManager\v4) into the specified destinations. (Requires an installed EAM version)
 
-4. **Run EAM in developer mode:**
+5. **Build the automatic asset extractor:**
+    - On Windows, run `bun run assets:build:windows` from the project root.
+    - This creates the Tauri sidecar at `src-tauri/binaries/eam-asset-extractor-x86_64-pc-windows-msvc.exe`.
+    - The first EAM launch downloads the current Realm build and caches the generated manifest and render sheet in EAM's app-data directory.
+    - If the sidecar cannot run or the network is unavailable, EAM automatically uses its bundled assets.
+
+6. **Run EAM in developer mode:**
     Run `bun run tauri dev` in the root of the project.
     
     This will take quite a while for the first time but eventually you should see a transparent Window pop up. This windows will after a short time display EAM.
@@ -79,4 +90,6 @@ Remove the following properties in order to be able to build:
 - `bundle.plugins.updater.pubkey` This is the public key of the updates, since your build requires it's own private key you need to either remove this property or have your own key-pair.  
 
 More informations can be found at the Tauri documentation [https://tauri.app/reference/config/](https://tauri.app/reference/config/)  
+Before a production build, prepare the target sidecar with `bun run assets:build:windows`. The Tauri build expects the target-triple-named binary under `src-tauri/binaries/`.
+
 When ready, use `npm run tauri build` in the root of the project.
