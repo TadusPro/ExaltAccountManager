@@ -28,9 +28,11 @@ import DebugFlagsPage from './pages/DebugFlagsPage';
 import { BackgroundSyncProvider } from './contexts/BackgroundSyncContext';
 import { NewsContextProvider } from './contexts/NewsContext';
 import { WidgetsContextProvider } from './contexts/WidgetsContext';
+import AssetRenderComparisonPage from './pages/AssetRenderComparisonPage';
 
 function MainRouter() {
     const theme = useTheme();
+    const defaultPage = import.meta.env.DEV ? <AssetRenderComparisonPage /> : <AccountsPage />;
 
     return (
         <Box
@@ -64,7 +66,8 @@ function MainRouter() {
                                                             <DeepLinkingComponent />
                                                             <NotificationScheduler />
                                                             <Routes>
-                                                                <Route path='/' element={<AccountsPage />}></Route>
+                                                                <Route path='/' element={defaultPage}></Route>
+                                                                <Route path='/assetRenderTest' element={<AssetRenderComparisonPage />}></Route>
                                                                 <Route path='/error' element={<FatalErrorPage />}></Route>
                                                                 <Route path='/accounts' element={<AccountsPage />}></Route>
                                                                 <Route path='/vaultPeeker' element={<VaultPeekerPage />}></Route>
