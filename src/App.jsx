@@ -77,7 +77,7 @@ function App() {
     if (!assetsReady) {
         return (
             <div style={{ display: "grid", minHeight: "100vh", placeItems: "center", color: "#fff" }}>
-                Downloading current game assets…
+                Loading item assets from the installed Realm client…
             </div>
         );
     }
@@ -90,7 +90,7 @@ function App() {
                     <div style={{ fontSize: "0.85rem", marginTop: "0.5rem", opacity: 0.75 }}>{assetError}</div>
                 </div>
                 <button type="button" onClick={() => setAssetRetry((value) => value + 1)}>
-                    Retry asset download
+                    Retry local asset extraction
                 </button>
             </div>
         );

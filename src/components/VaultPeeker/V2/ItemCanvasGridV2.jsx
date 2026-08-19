@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback, useLayoutEffect } from 'react';
 import { Box, Tooltip } from '@mui/material';
-import { items } from '../../../assets/runtimeAssets';
+import { getRuntimeAssetCacheKey, items } from '../../../assets/runtimeAssets';
 import { drawItemPromise, getItemRarity } from '../../../utils/realmItemDrawUtils';
 import { TooltipUiForItem } from '../../Widgets/Widgets/Components/InventoryRender';
 import useVaultPeeker from '../../../hooks/useVaultPeeker';
@@ -55,7 +55,7 @@ const preloadAllItemImages = async (itemEntries, itemPadding, debugLogs = false)
         const rarity = getRarityFromData(data);
 
         // Create cache key for in-memory lookup
-        const memoryCacheKey = `${itemId}-${rarity}-${itemPadding}`;
+        const memoryCacheKey = `${getRuntimeAssetCacheKey()}-${itemId}-${rarity}-${itemPadding}`;
 
         // Check in-memory cache first (much faster than localStorage)
         if (imageElementCache.has(memoryCacheKey)) {

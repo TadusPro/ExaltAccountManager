@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text.Json;
 using RotMGAssetExtractor;
 using AssetImageBuffer = RotMGAssetExtractor.Flatc.ImageBuffer;
@@ -17,7 +18,7 @@ internal static class Program
     private const int IconSize = 32;
     private const int IconCanvasSize = IconSize + 2;
     private const int SheetColumns = 64;
-    private const int ManifestSchemaVersion = 2;
+    private const int ManifestSchemaVersion = 3;
 
     private static async Task<int> Main(string[] args)
     {
@@ -30,34 +31,29 @@ internal static class Program
                 return 0;
             }
 
-            Directory.CreateDirectory(options.DataDirectory);
+            if (!File.Exists(options.ResourcesAssetsPath))
+                throw new FileNotFoundException(
+                    "The installed Realm resources.assets file was not found.",
+                    options.ResourcesAssetsPath);
+
             Directory.CreateDirectory(Path.GetDirectoryName(options.ManifestPath)!);
             Directory.CreateDirectory(Path.GetDirectoryName(options.RenderSheetPath)!);
 
-            if (options.Force)
-            {
-                // Removing only the extractor metadata invalidates its build cache while
-                // keeping the downloaded files recoverable for the next extraction.
-                var metadataPath = Path.Combine(options.DataDirectory, "GameData", "meta.xml");
-                if (File.Exists(metadataPath))
-                    File.Delete(metadataPath);
-            }
+            var sourceChecksum = await GetFileChecksumAsync(options.ResourcesAssetsPath);
 
-            await RotMGAssetExtractor.RotMGAssetExtractor.InitAsync(
-                options.DataDirectory,
-                ExtractionType.Models,
-                ExtractionType.ImagesLight,
-                ExtractionType.Spritesheet);
-
-            if (!options.Force && IsManifestCurrent(options))
+            if (!options.Force && IsManifestCurrent(options, sourceChecksum))
             {
                 Console.WriteLine(JsonSerializer.Serialize(new
                 {
                     status = "cached",
-                    buildHash = RotMGAssetExtractor.RotMGAssetExtractor.BuildHash,
+                    buildHash = sourceChecksum,
                 }));
                 return 0;
             }
+
+            await RotMGAssetExtractor.RotMGAssetExtractor.LoadLocalResourcesAsync(
+                options.ResourcesAssetsPath,
+                sourceChecksum);
 
             var entries = BuildEntries();
             if (entries.Count == 0)
@@ -71,8 +67,8 @@ internal static class Program
                 // Bump this whenever the sheet's crop/placement format changes so
                 // existing browser-side item image caches cannot reuse old crops.
                 SchemaVersion = ManifestSchemaVersion,
-                BuildHash = RotMGAssetExtractor.RotMGAssetExtractor.BuildHash,
-                BuildVersion = RotMGAssetExtractor.RotMGAssetExtractor.BuildVersion,
+                BuildHash = sourceChecksum,
+                BuildVersion = string.Empty,
                 Items = entries.ToDictionary(
                     entry => entry.Model.type.ToString(),
                     entry => new object[]
@@ -115,7 +111,14 @@ internal static class Program
         }
     }
 
-    private static bool IsManifestCurrent(ExtractorOptions options)
+    private static async Task<string> GetFileChecksumAsync(string path)
+    {
+        await using var stream = File.OpenRead(path);
+        var checksum = await MD5.HashDataAsync(stream);
+        return Convert.ToHexString(checksum).ToLowerInvariant();
+    }
+
+    private static bool IsManifestCurrent(ExtractorOptions options, string sourceChecksum)
     {
         if (!File.Exists(options.ManifestPath) || !File.Exists(options.RenderSheetPath))
             return false;
@@ -129,7 +132,7 @@ internal static class Program
                 && document.RootElement.TryGetProperty("buildHash", out var buildHash)
                 && string.Equals(
                     buildHash.GetString(),
-                    RotMGAssetExtractor.RotMGAssetExtractor.BuildHash,
+                    sourceChecksum,
                     StringComparison.OrdinalIgnoreCase);
         }
         catch (JsonException)
@@ -300,7 +303,7 @@ internal static class Program
     {
         var options = new ExtractorOptions
         {
-            DataDirectory = Path.Combine(AppContext.BaseDirectory, "AssetCache"),
+            ResourcesAssetsPath = string.Empty,
             ManifestPath = Path.Combine(AppContext.BaseDirectory, "AssetCache", "manifest.json"),
             RenderSheetPath = Path.Combine(AppContext.BaseDirectory, "AssetCache", "renders.png"),
         };
@@ -309,8 +312,8 @@ internal static class Program
         {
             switch (args[index])
             {
-                case "--data-dir":
-                    options.DataDirectory = GetValue(args, ref index, "--data-dir");
+                case "--resources-assets":
+                    options.ResourcesAssetsPath = GetValue(args, ref index, "--resources-assets");
                     break;
                 case "--manifest":
                     options.ManifestPath = GetValue(args, ref index, "--manifest");
@@ -330,6 +333,9 @@ internal static class Program
             }
         }
 
+        if (!options.ShowHelp && string.IsNullOrWhiteSpace(options.ResourcesAssetsPath))
+            throw new ArgumentException("Argument '--resources-assets' is required.");
+
         return options;
     }
 
@@ -343,15 +349,15 @@ internal static class Program
     private static void PrintHelp()
     {
         Console.WriteLine("EAM asset extractor");
-        Console.WriteLine("  --data-dir <path>       Extractor download/cache directory");
+        Console.WriteLine("  --resources-assets <path>  Installed Realm resources.assets input");
         Console.WriteLine("  --manifest <path>       EAM runtime manifest output path");
         Console.WriteLine("  --render-sheet <path>   EAM renders.png-compatible output path");
-        Console.WriteLine("  --force                 Refresh the current build metadata");
+        Console.WriteLine("  --force                 Regenerate even when the local file is unchanged");
     }
 
     private sealed class ExtractorOptions
     {
-        public required string DataDirectory { get; set; }
+        public required string ResourcesAssetsPath { get; set; }
         public required string ManifestPath { get; set; }
         public required string RenderSheetPath { get; set; }
         public bool Force { get; set; }

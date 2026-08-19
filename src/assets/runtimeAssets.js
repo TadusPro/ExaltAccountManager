@@ -17,6 +17,7 @@ export function mergeRuntimeAssets(manifest) {
         return false;
     }
 
+    Object.keys(items).forEach((itemId) => delete items[itemId]);
     Object.assign(items, manifest.items);
     runtimeManifest = manifest;
     return true;

@@ -5,6 +5,7 @@ mod asset_sync;
 
 extern crate dirs;
 
+use asset_sync::refresh_asset_cache_from_game;
 use diesel::r2d2::ConnectionManager;
 use eam_background_sync::types::SyncMode;
 use eam_background_sync::BackgroundSyncManager;
@@ -32,9 +33,6 @@ use eam_commons::toast_notifications::{
     content::EndOfMonthNotificationContent,
 };
 use serde::Serialize;
-use asset_sync::refresh_asset_cache;
-
-
 use chrono::{DateTime, TimeZone, Utc};
 use diesel::r2d2::Pool;
 use diesel::SqliteConnection;
@@ -621,6 +619,16 @@ async fn send_post_request_get_redirect_url(
 }
 
 #[tauri::command]
+async fn refresh_asset_cache(app: AppHandle, force: bool) -> Result<Value, String> {
+    let game_exe_path = get_user_data_by_key("game_exe_path".to_string())
+        .await
+        .map(|data| data.dataValue)
+        .unwrap_or_else(|_| eam_commons::paths::get_default_game_path());
+
+    refresh_asset_cache_from_game(app, force, game_exe_path).await
+}
+
+#[tauri::command]
 async fn check_for_game_update(force: bool) -> Result<bool, Error> {
     let (tx, rx) = channel();
     info!("Checking for game update...");
@@ -669,7 +677,7 @@ fn check_for_game_update_impl(
 }
 
 #[tauri::command]
-async fn perform_game_update() -> Result<bool, Error> {
+async fn perform_game_update(app: AppHandle) -> Result<bool, Error> {
     let (tx, rx) = channel();
     info!("Performing game update...");
     thread::spawn(move || match POOL.lock() {
@@ -684,7 +692,22 @@ async fn perform_game_update() -> Result<bool, Error> {
     });
 
     match rx.recv().unwrap() {
-        Ok(result) => Ok(result),
+        Ok(result) => {
+            if result {
+                let game_exe_path = get_user_data_by_key("game_exe_path".to_string())
+                    .await
+                    .map(|data| data.dataValue)
+                    .unwrap_or_else(|_| eam_commons::paths::get_default_game_path());
+
+                refresh_asset_cache_from_game(app, true, game_exe_path)
+                    .await
+                    .map_err(|error| {
+                        tauri::Error::from(std::io::Error::new(ErrorKind::Other, error))
+                    })?;
+            }
+
+            Ok(result)
+        }
         Err(e) => {
             error!("Error while performing game update: {}", e);
             Err(tauri::Error::from(std::io::Error::new(
