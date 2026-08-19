@@ -620,12 +620,15 @@ async fn send_post_request_get_redirect_url(
 
 #[tauri::command]
 async fn refresh_asset_cache(app: AppHandle, force: bool) -> Result<Value, String> {
-    let game_exe_path = get_user_data_by_key("game_exe_path".to_string())
-        .await
-        .map(|data| data.dataValue)
-        .unwrap_or_else(|_| eam_commons::paths::get_default_game_path());
-
+    let game_exe_path = resolve_game_exe_path().await;
     refresh_asset_cache_from_game(app, force, game_exe_path).await
+}
+
+async fn resolve_game_exe_path() -> String {
+    match get_user_data_by_key("game_exe_path".to_string()).await {
+        Ok(data) if !data.dataValue.trim().is_empty() => data.dataValue,
+        _ => eam_commons::paths::get_default_game_path(),
+    }
 }
 
 #[tauri::command]
@@ -694,11 +697,7 @@ async fn perform_game_update(app: AppHandle) -> Result<bool, Error> {
     match rx.recv().unwrap() {
         Ok(result) => {
             if result {
-                let game_exe_path = get_user_data_by_key("game_exe_path".to_string())
-                    .await
-                    .map(|data| data.dataValue)
-                    .unwrap_or_else(|_| eam_commons::paths::get_default_game_path());
-
+                let game_exe_path = resolve_game_exe_path().await;
                 refresh_asset_cache_from_game(app, true, game_exe_path)
                     .await
                     .map_err(|error| {

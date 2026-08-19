@@ -52,8 +52,7 @@ internal static class Program
             }
 
             await RotMGAssetExtractor.RotMGAssetExtractor.LoadLocalResourcesAsync(
-                options.ResourcesAssetsPath,
-                sourceChecksum);
+                options.ResourcesAssetsPath);
 
             var entries = BuildEntries();
             if (entries.Count == 0)
@@ -68,7 +67,6 @@ internal static class Program
                 // existing browser-side item image caches cannot reuse old crops.
                 SchemaVersion = ManifestSchemaVersion,
                 BuildHash = sourceChecksum,
-                BuildVersion = string.Empty,
                 Items = entries.ToDictionary(
                     entry => entry.Model.type.ToString(),
                     entry => new object[]
@@ -368,7 +366,6 @@ internal static class Program
     {
         public int SchemaVersion { get; set; }
         public string BuildHash { get; set; } = string.Empty;
-        public string BuildVersion { get; set; } = string.Empty;
         public Dictionary<string, object[]> Items { get; set; } = new();
     }
 

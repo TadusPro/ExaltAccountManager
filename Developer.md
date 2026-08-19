@@ -50,16 +50,16 @@ EAM is a project with the following components:
     If you have trouble building the `EAM_Task_Installer` you can just copy the current existing versions from your[C:\Users\\%username%\AppData\Local\ExaltAccountManager\v4](C:\Users\\%username%\AppData\Local\ExaltAccountManager\v4) into the specified destinations. (Requires an installed EAM version)
 
 5. **Build the automatic asset extractor:**
-    - On Windows, run `bun run assets:build:windows` from the project root.
+    - On Windows, run `bun run assets:build` from the project root.
     - This creates the Tauri sidecar at `src-tauri/binaries/eam-asset-extractor-x86_64-pc-windows-msvc.exe`.
-    - The first EAM launch downloads the current Realm build and caches the generated manifest and render sheet in EAM's app-data directory.
-    - EAM requires live assets on first launch. After a successful extraction, the generated cache can be used when the network is temporarily unavailable.
-    - This live-only migration covers item metadata and item renders. Character portrait textile/skin sheets still use the existing portrait pipeline until the extractor exposes their mapping.
+    - Realm Updater is the only component that downloads or repairs game files. The extractor reads its installed `resources.assets` file and caches EAM's generated item manifest and render sheet in app data.
+    - EAM requires locally extracted item assets on first launch. If Realm files are missing, the startup recovery screen can run Realm Updater before retrying extraction.
+    - Item metadata and item renders are live-only. Character portrait textile/skin sheets still use the existing portrait pipeline until the extractor exposes their mapping.
 
 6. **Run EAM in developer mode:**
     Run `bun run tauri dev` in the root of the project.
     
-    This will take quite a while for the first time but eventually you should see a transparent Window pop up. This windows will after a short time display EAM.
+    This will take quite a while the first time, then the EAM window will open and load assets from the installed Realm client.
     
     **Enjoy coding 🥳** 
 
@@ -91,6 +91,6 @@ Remove the following properties in order to be able to build:
 - `bundle.plugins.updater.pubkey` This is the public key of the updates, since your build requires it's own private key you need to either remove this property or have your own key-pair.  
 
 More informations can be found at the Tauri documentation [https://tauri.app/reference/config/](https://tauri.app/reference/config/)  
-Before a production build, prepare the target sidecar with `bun run assets:build:windows`. The Tauri build expects the target-triple-named binary under `src-tauri/binaries/`.
+Before a production build, prepare the target sidecar with `bun run assets:build`. The Tauri build expects the target-triple-named binary under `src-tauri/binaries/`.
 
 When ready, use `npm run tauri build` in the root of the project.
