@@ -191,7 +191,7 @@ internal static class Program
                     BagType = equipment?.BagType ?? 0,
                     Soulbound = equipment?.Soulbound ?? false,
                     Rarity = GetRarity(equipment?.Rarity),
-                    IsShiny = IsShiny(name, model.id),
+                    IsShiny = IsShinyItem(name, model.id),
                 };
             }
         }
@@ -293,7 +293,7 @@ internal static class Program
         return 0;
     }
 
-    private static bool IsShiny(string? name, string? id) =>
+    private static bool IsShinyItem(string? name, string? id) =>
         (name?.Contains("shiny", StringComparison.OrdinalIgnoreCase) ?? false)
         || (id?.Contains("shiny", StringComparison.OrdinalIgnoreCase) ?? false);
 

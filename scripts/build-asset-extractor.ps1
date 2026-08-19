@@ -32,4 +32,4 @@ if (-not (Test-Path -LiteralPath $publishedBinary)) {
 }
 
 Copy-Item -LiteralPath $publishedBinary -Destination $targetBinary -Force
-Write-Host "Prepared Tauri sidecar: $targetBinary"
+Write-Output "Prepared Tauri sidecar: $targetBinary"
