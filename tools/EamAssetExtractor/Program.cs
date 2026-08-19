@@ -13,6 +13,7 @@ namespace EamAssetExtractor;
 internal static class Program
 {
     private const int ItemSize = 40;
+    private const int IconSize = 32;
     private const int SheetColumns = 64;
 
     private static async Task<int> Main(string[] args)
@@ -212,14 +213,17 @@ internal static class Program
 
             using var resized = entry.Image.Clone(context => context.Resize(new ResizeOptions
             {
-                Size = new Size(ItemSize, ItemSize),
-                Mode = ResizeMode.Max,
+                // Match Muledump's original render format: the source sprite
+                // is drawn into a 32x32 icon inside a 40x40 crop, leaving a
+                // four-pixel transparent margin on every side.
+                Size = new Size(IconSize, IconSize),
+                Mode = ResizeMode.Stretch,
                 Sampler = KnownResamplers.NearestNeighbor,
             }));
 
             var offset = new Point(
-                entry.X + ((ItemSize - resized.Width) / 2),
-                entry.Y + ((ItemSize - resized.Height) / 2));
+                entry.X + ((ItemSize - IconSize) / 2),
+                entry.Y + ((ItemSize - IconSize) / 2));
             sheet.Mutate(context => context.DrawImage(resized, offset, 1f));
             entry.Image.Dispose();
         }
