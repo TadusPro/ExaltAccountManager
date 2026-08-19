@@ -16044,4 +16044,4 @@ const enchantments = {
 	29946: ["Cool Protection", "When hit there is a 15% chance of slowing near enemies for 2 seconds. Adds +2 Defense and +35 HP."],
 };
 
-export { items as legacyItems, classes, skins, petAbilities, textures, pets, petSkins, enchantments };
+export { classes, skins, petAbilities, textures, pets, petSkins, enchantments };
