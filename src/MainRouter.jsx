@@ -29,10 +29,19 @@ import { BackgroundSyncProvider } from './contexts/BackgroundSyncContext';
 import { NewsContextProvider } from './contexts/NewsContext';
 import { WidgetsContextProvider } from './contexts/WidgetsContext';
 import AssetRenderComparisonPage from './pages/AssetRenderComparisonPage';
+import { VaultPeekerContextProvider } from './contexts/VaultPeekerContext';
+
+function AssetRenderComparisonRoute() {
+    return (
+        <VaultPeekerContextProvider>
+            <AssetRenderComparisonPage />
+        </VaultPeekerContextProvider>
+    );
+}
 
 function MainRouter() {
     const theme = useTheme();
-    const defaultPage = import.meta.env.DEV ? <AssetRenderComparisonPage /> : <AccountsPage />;
+    const defaultPage = import.meta.env.DEV ? <AssetRenderComparisonRoute /> : <AccountsPage />;
 
     return (
         <Box
@@ -67,7 +76,7 @@ function MainRouter() {
                                                             <NotificationScheduler />
                                                             <Routes>
                                                                 <Route path='/' element={defaultPage}></Route>
-                                                                <Route path='/assetRenderTest' element={<AssetRenderComparisonPage />}></Route>
+                                                                <Route path='/assetRenderTest' element={<AssetRenderComparisonRoute />}></Route>
                                                                 <Route path='/error' element={<FatalErrorPage />}></Route>
                                                                 <Route path='/accounts' element={<AccountsPage />}></Route>
                                                                 <Route path='/vaultPeeker' element={<VaultPeekerPage />}></Route>

@@ -3,21 +3,23 @@ import { Box, Button, Chip, Divider, Paper, Stack, Typography } from "@mui/mater
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import { useNavigate } from "react-router-dom";
 import { items, resolveRuntimeAssetSource } from "../assets/runtimeAssets";
+import { legacyItems } from "../assets/constants";
+import useVaultPeeker from "../hooks/useVaultPeeker";
 
-const SAMPLE_ITEM_IDS = ["283", "284", "303"];
 const ITEM_CROP_SIZE = 40;
-const LEGACY_CELL_SIZE = 50;
-const LIVE_CELL_SIZE = 40;
+const COMPARISON_CELL_SIZE = 50;
+const COMPARISON_ITEM_PADDING = 5;
 
-const drawRow = (canvas, image, sampleItems, cellSize, itemPadding) => {
-    canvas.width = sampleItems.length * cellSize;
-    canvas.height = cellSize;
+const drawRow = (canvas, image, comparisonItems, itemKey) => {
+    canvas.width = comparisonItems.length * COMPARISON_CELL_SIZE;
+    canvas.height = COMPARISON_CELL_SIZE;
 
     const context = canvas.getContext("2d");
     context.clearRect(0, 0, canvas.width, canvas.height);
     context.imageSmoothingEnabled = false;
 
-    sampleItems.forEach(([, item], index) => {
+    comparisonItems.forEach((comparisonItem, index) => {
+        const item = comparisonItem[itemKey];
         const itemX = Number(item?.[3]);
         const itemY = Number(item?.[4]);
 
@@ -31,8 +33,8 @@ const drawRow = (canvas, image, sampleItems, cellSize, itemPadding) => {
             itemY,
             ITEM_CROP_SIZE,
             ITEM_CROP_SIZE,
-            (index * cellSize) + itemPadding,
-            itemPadding,
+            (index * COMPARISON_CELL_SIZE) + COMPARISON_ITEM_PADDING,
+            COMPARISON_ITEM_PADDING,
             ITEM_CROP_SIZE,
             ITEM_CROP_SIZE,
         );
@@ -41,48 +43,62 @@ const drawRow = (canvas, image, sampleItems, cellSize, itemPadding) => {
 
 function AssetRenderComparisonPage() {
     const navigate = useNavigate();
+    const { totalsMap, isLoading: isTotalsLoading } = useVaultPeeker();
     const legacyCanvasRef = useRef(null);
     const liveCanvasRef = useRef(null);
     const [isLoaded, setIsLoaded] = useState(false);
     const [loadError, setLoadError] = useState(null);
 
-    const sampleItems = useMemo(() => {
-        const preferredItems = SAMPLE_ITEM_IDS
-            .map((itemId) => [itemId, items[itemId]])
-            .filter(([, item]) => item);
+    const comparisonItems = useMemo(() => {
+        if (!totalsMap?.size) return [];
 
-        if (preferredItems.length === SAMPLE_ITEM_IDS.length) {
-            return preferredItems;
-        }
-
-        return Object.entries(items)
-            .filter(([itemId, item]) => Number(itemId) > 0 && item?.length >= 5)
-            .slice(0, 3);
-    }, []);
+        return Array.from(totalsMap.entries())
+            .filter(([itemId]) => Number(itemId) > 0)
+            .sort(([, first], [, second]) => (second.count || 0) - (first.count || 0))
+            .slice(0, 3)
+            .map(([itemId, total]) => ({
+                itemId: String(itemId),
+                count: total.count || 0,
+                liveItem: items[itemId],
+                legacyItem: legacyItems[itemId],
+            }));
+    }, [totalsMap]);
 
     useEffect(() => {
+        if (comparisonItems.length === 0) return undefined;
+
         let cancelled = false;
-        const image = new Image();
-        image.src = resolveRuntimeAssetSource("renders.png");
+        setIsLoaded(false);
+        setLoadError(null);
 
-        image.onload = () => {
-            if (cancelled) return;
+        const legacyImage = new Image();
+        const liveImage = new Image();
+        let loadedImages = 0;
 
-            drawRow(legacyCanvasRef.current, image, sampleItems, LEGACY_CELL_SIZE, 5);
-            drawRow(liveCanvasRef.current, image, sampleItems, LIVE_CELL_SIZE, 0);
+        const handleLoaded = () => {
+            loadedImages += 1;
+            if (cancelled || loadedImages !== 2) return;
+
+            drawRow(legacyCanvasRef.current, legacyImage, comparisonItems, "legacyItem");
+            drawRow(liveCanvasRef.current, liveImage, comparisonItems, "liveItem");
             setIsLoaded(true);
         };
 
-        image.onerror = () => {
-            if (!cancelled) {
-                setLoadError("The live render sheet could not be loaded.");
-            }
+        const handleError = () => {
+            if (!cancelled) setLoadError("The old or live render sheet could not be loaded.");
         };
+
+        legacyImage.onload = handleLoaded;
+        liveImage.onload = handleLoaded;
+        legacyImage.onerror = handleError;
+        liveImage.onerror = handleError;
+        legacyImage.src = "/dev/legacy-renders.png";
+        liveImage.src = resolveRuntimeAssetSource("renders.png");
 
         return () => {
             cancelled = true;
         };
-    }, [sampleItems]);
+    }, [comparisonItems]);
 
     return (
         <Box sx={{ p: 3, maxWidth: 900 }}>
@@ -92,16 +108,16 @@ function AssetRenderComparisonPage() {
                         Asset render comparison
                     </Typography>
                     <Typography color="text.secondary" sx={{ mt: 0.75 }}>
-                        A controlled one-row test for the old renderer geometry versus the live-extracted renderer geometry.
+                        The same three Vault Peeker totals rendered from the historical bundled atlas and the live-extracted atlas.
                     </Typography>
                 </Box>
 
                 <Paper sx={{ p: 2.5 }}>
                     <Stack spacing={2}>
                         <Box>
-                            <Typography variant="h6">Same live sheet, two render styles</Typography>
+                            <Typography variant="h6">Historical assets versus live assets</Typography>
                             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                                Both rows use the same current runtime asset source. This isolates crop size, cell size, and transparent padding without restoring the retired bundled asset atlas.
+                                Both rows use identical 50px cells and 40px crops. The only source difference is the atlas: the upper row is the pre-live bundled sheet, and the lower row is the runtime extractor output.
                             </Typography>
                         </Box>
 
@@ -110,9 +126,9 @@ function AssetRenderComparisonPage() {
                         <Stack spacing={1}>
                             <Stack direction="row" spacing={1} alignItems="center">
                                 <Chip size="small" label="OLD" color="warning" />
-                                <Typography variant="subtitle1">Legacy renderer: 50px cell / 40px crop / 5px padding</Typography>
+                                <Typography variant="subtitle1">Bundled renders.png</Typography>
                             </Stack>
-                            <Box sx={{ minHeight: LEGACY_CELL_SIZE, bgcolor: "background.default", display: "flex", alignItems: "flex-start" }}>
+                            <Box sx={{ minHeight: COMPARISON_CELL_SIZE, bgcolor: "background.default", display: "flex", alignItems: "flex-start" }}>
                                 <canvas
                                     ref={legacyCanvasRef}
                                     aria-label="Legacy renderer comparison row"
@@ -124,9 +140,9 @@ function AssetRenderComparisonPage() {
                         <Stack spacing={1}>
                             <Stack direction="row" spacing={1} alignItems="center">
                                 <Chip size="small" label="NEW" color="primary" />
-                                <Typography variant="subtitle1">Live renderer: 40px cell / 32px sprite inside the 40px crop</Typography>
+                                <Typography variant="subtitle1">Live-extracted renders.png</Typography>
                             </Stack>
-                            <Box sx={{ minHeight: LIVE_CELL_SIZE, bgcolor: "background.default", display: "flex", alignItems: "flex-start" }}>
+                            <Box sx={{ minHeight: COMPARISON_CELL_SIZE, bgcolor: "background.default", display: "flex", alignItems: "flex-start" }}>
                                 <canvas
                                     ref={liveCanvasRef}
                                     aria-label="Live renderer comparison row"
@@ -136,13 +152,18 @@ function AssetRenderComparisonPage() {
                         </Stack>
 
                         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                            {sampleItems.map(([itemId, item]) => (
-                                <Chip key={itemId} size="small" variant="outlined" label={`${item?.[0] || "Unknown"} (#${itemId})`} />
+                            {comparisonItems.map(({ itemId, count, liveItem, legacyItem }) => (
+                                <Chip
+                                    key={itemId}
+                                    size="small"
+                                    variant="outlined"
+                                    label={`${liveItem?.[0] || legacyItem?.[0] || "Unknown"} (#${itemId}) ×${count}`}
+                                />
                             ))}
                         </Stack>
 
-                        {!isLoaded && !loadError && (
-                            <Typography color="text.secondary">Loading the live render sheet…</Typography>
+                        {!isLoaded && !loadError && (isTotalsLoading || comparisonItems.length === 0) && (
+                            <Typography color="text.secondary">Loading the top Vault Peeker totals and both render sheets…</Typography>
                         )}
                         {loadError && <Typography color="error">{loadError}</Typography>}
                     </Stack>
