@@ -4,6 +4,7 @@ using AssetImageBuffer = RotMGAssetExtractor.Flatc.ImageBuffer;
 using RotMGAssetExtractor.Model;
 using RotMGAssetExtractor.ModelHelpers;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
@@ -14,7 +15,9 @@ internal static class Program
 {
     private const int ItemSize = 40;
     private const int IconSize = 32;
+    private const int IconCanvasSize = IconSize + 2;
     private const int SheetColumns = 64;
+    private const int ManifestSchemaVersion = 2;
 
     private static async Task<int> Main(string[] args)
     {
@@ -65,7 +68,9 @@ internal static class Program
 
             var manifest = new AssetManifest
             {
-                SchemaVersion = 1,
+                // Bump this whenever the sheet's crop/placement format changes so
+                // existing browser-side item image caches cannot reuse old crops.
+                SchemaVersion = ManifestSchemaVersion,
                 BuildHash = RotMGAssetExtractor.RotMGAssetExtractor.BuildHash,
                 BuildVersion = RotMGAssetExtractor.RotMGAssetExtractor.BuildVersion,
                 Items = entries.ToDictionary(
@@ -118,7 +123,10 @@ internal static class Program
         try
         {
             using var document = JsonDocument.Parse(File.ReadAllText(options.ManifestPath));
-            return document.RootElement.TryGetProperty("buildHash", out var buildHash)
+            return document.RootElement.TryGetProperty("schemaVersion", out var schemaVersion)
+                && schemaVersion.TryGetInt32(out var schemaValue)
+                && schemaValue == ManifestSchemaVersion
+                && document.RootElement.TryGetProperty("buildHash", out var buildHash)
                 && string.Equals(
                     buildHash.GetString(),
                     RotMGAssetExtractor.RotMGAssetExtractor.BuildHash,
@@ -213,22 +221,64 @@ internal static class Program
 
             using var resized = entry.Image.Clone(context => context.Resize(new ResizeOptions
             {
-                // Match Muledump's original render format: the source sprite
-                // is drawn into a 32x32 icon inside a 40x40 crop, leaving a
-                // four-pixel transparent margin on every side.
+                // Match Muledump's source-sprite scaling. The outline is added
+                // separately below, so the raw sprite remains a 32x32 image.
                 Size = new Size(IconSize, IconSize),
                 Mode = ResizeMode.Stretch,
                 Sampler = KnownResamplers.NearestNeighbor,
             }));
 
+            using var iconCanvas = new Image<Rgba32>(IconCanvasSize, IconCanvasSize);
+            iconCanvas.Mutate(context =>
+            {
+                context.Clear(SixLabors.ImageSharp.Color.Transparent);
+                context.DrawImage(resized, new Point(1, 1), 1f);
+            });
+
+            using var edge = CreateEdgeOutline(iconCanvas);
             var offset = new Point(
-                entry.X + ((ItemSize - IconSize) / 2),
-                entry.Y + ((ItemSize - IconSize) / 2));
-            sheet.Mutate(context => context.DrawImage(resized, offset, 1f));
+                entry.X + ((ItemSize - IconCanvasSize) / 2),
+                entry.Y + ((ItemSize - IconCanvasSize) / 2));
+            sheet.Mutate(context =>
+            {
+                context.DrawImage(iconCanvas, offset, 1f);
+                context.DrawImage(edge, offset, 1f);
+            });
             entry.Image.Dispose();
         }
 
         return sheet;
+    }
+
+    private static Image<Rgba32> CreateEdgeOutline(Image<Rgba32> icon)
+    {
+        var outline = new Image<Rgba32>(icon.Width, icon.Height);
+        outline.Mutate(context => context.Clear(SixLabors.ImageSharp.Color.Transparent));
+
+        for (var y = 0; y < icon.Height; y++)
+        {
+            for (var x = 0; x < icon.Width; x++)
+            {
+                if (icon.Frames.RootFrame.DangerousGetPixelRowMemory(y).Span[x].A == 0)
+                    continue;
+
+                for (var offsetY = -1; offsetY <= 1; offsetY++)
+                {
+                    for (var offsetX = -1; offsetX <= 1; offsetX++)
+                    {
+                        var neighborX = x + offsetX;
+                        var neighborY = y + offsetY;
+                        if (neighborX < 0 || neighborY < 0 || neighborX >= icon.Width || neighborY >= icon.Height)
+                            continue;
+
+                        if (icon.Frames.RootFrame.DangerousGetPixelRowMemory(neighborY).Span[neighborX].A == 0)
+                            outline.Frames.RootFrame.DangerousGetPixelRowMemory(neighborY).Span[neighborX] = new Rgba32(0, 0, 0, 255);
+                    }
+                }
+            }
+        }
+
+        return outline;
     }
 
     private static int GetRarity(string? rarity)

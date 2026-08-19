@@ -22,7 +22,11 @@ export function mergeRuntimeAssets(manifest) {
     return true;
 }
 export function getRuntimeAssetCacheKey() {
-    return runtimeManifest?.buildHash || "unavailable";
+    if (!runtimeManifest?.buildHash) {
+        return "unavailable";
+    }
+
+    return `${runtimeManifest.buildHash}-schema${runtimeManifest.schemaVersion || 1}`;
 }
 
 export function resolveRuntimeAssetSource(source) {
