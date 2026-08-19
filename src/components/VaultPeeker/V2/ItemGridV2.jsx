@@ -7,7 +7,7 @@ import useVaultPeeker from "../../../hooks/useVaultPeeker";
 import { TooltipUiForItem } from "../../Widgets/Widgets/Components/InventoryRender";
 
 const ITEM_BASE_SIZE = 40;
-const DEFAULT_ITEM_PADDING = 2;
+const DEFAULT_ITEM_PADDING = 0;
 
 /**
  * ItemGridV2 - A performant grid component for rendering realm items

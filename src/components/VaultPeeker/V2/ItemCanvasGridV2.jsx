@@ -25,7 +25,7 @@ const imageElementCache = new Map();
  */
 
 const ITEM_SIZE = 40;
-const DEFAULT_ITEM_PADDING = 2;
+const DEFAULT_ITEM_PADDING = 0;
 
 /**
  * Get rarity from item data - supports both direct maxRarity and enchant_ids
