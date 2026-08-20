@@ -72,6 +72,9 @@ export const muledumpTheme = createTheme(darkTheme, {
             pinnedBg: '#333333',
             headerBg: '#333333',
         },
+        vaultPeeker: {
+            itemSlotImage: '/realm/itemSlot_muledump.svg',
+        },
     },
     shadows: darkTheme.shadows.map((shadow, index) => (
         index === 0 ? 'none' : 'rgba(0, 0, 0, 0.35) 0px 2px 10px 0px'

@@ -1,8 +1,8 @@
 
-import { Box, Checkbox, FormControl, FormControlLabel, InputLabel, MenuItem, Paper, Popover, Select, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography } from '@mui/material';
+import { Box, Checkbox, FormControl, FormControlLabel, InputLabel, MenuItem, Paper, Popover, Select, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material';
 import ComponentBox from './../components/ComponentBox';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
-import { forwardRef, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import StyledButton from './../components/StyledButton';
 import { invoke } from '@tauri-apps/api/core';
 import useUserSettings from '../hooks/useUserSettings';
@@ -12,7 +12,7 @@ import ViewColumnOutlinedIcon from '@mui/icons-material/ViewColumnOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
-import { ColorContext, useUserLogin } from 'eam-commons-js';
+import { useUserLogin } from 'eam-commons-js';
 import DnsOutlinedIcon from '@mui/icons-material/DnsOutlined';
 import useSnack from '../hooks/useSnack';
 import useServerList from '../hooks/useServerList';
@@ -45,7 +45,6 @@ import {
 
 function SettingsPage() {
     const userSettings = useUserSettings();
-    const colorContext = useContext(ColorContext);
     const { serverList } = useServerList();
     const { showSnackbar } = useSnack();
     const { idToken, isAuthenticated } = useUserLogin();
@@ -237,14 +236,25 @@ function SettingsPage() {
         }
     }, [analyticsSettings?.optOut]);
 
-    const isDarkMode = () => {
-        if (settings?.general?.colorScheme === MULEDUMP_COLOR_SCHEME)
-            return true;
+    const selectedThemeOption = settings?.general?.colorScheme === MULEDUMP_COLOR_SCHEME
+        ? MULEDUMP_COLOR_SCHEME
+        : settings?.general?.theme === 'light'
+            ? 'eam-light'
+            : 'eam-dark';
 
-        if (settings === undefined || settings.general === undefined || settings.general.theme === undefined)
-            return true;
+    const handleThemeChange = (_event, themeOption) => {
+        if (!themeOption) return;
 
-        return settings.general.theme === 'dark';
+        setSettings({
+            ...settings,
+            general: {
+                ...settings.general,
+                colorScheme: themeOption === MULEDUMP_COLOR_SCHEME
+                    ? MULEDUMP_COLOR_SCHEME
+                    : DEFAULT_COLOR_SCHEME,
+                theme: themeOption === 'eam-light' ? 'light' : 'dark',
+            },
+        });
     };
 
     const deleteAllUserData = async () => {
@@ -940,54 +950,25 @@ function SettingsPage() {
                     sx={{
                         mt: 1,
                         ml: 1,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-start',
-                        gap: 1.5,
                     }}
                 >
-                    <FormControl size="small" sx={{ minWidth: 190 }}>
-                        <InputLabel id="color-scheme-select-label">Color scheme</InputLabel>
-                        <Select
-                            labelId="color-scheme-select-label"
-                            label="Color scheme"
-                            value={settings?.general?.colorScheme || DEFAULT_COLOR_SCHEME}
-                            onChange={(event) => {
-                                setSettings({
-                                    ...settings,
-                                    general: {
-                                        ...settings.general,
-                                        colorScheme: event.target.value,
-                                    },
-                                });
-                            }}
-                        >
-                            <MenuItem value={DEFAULT_COLOR_SCHEME}>EAM</MenuItem>
-                            <MenuItem value={MULEDUMP_COLOR_SCHEME}>Muledump</MenuItem>
-                        </Select>
-                    </FormControl>
-                    <Tooltip
-                        title={settings?.general?.colorScheme === MULEDUMP_COLOR_SCHEME
-                            ? "Muledump uses its original dark palette."
-                            : isDarkMode()
-                                ? "Burn your eyes!"
-                                : "Come to the dark side, we have cookies!"}
+                    <ToggleButtonGroup
+                        exclusive
+                        size="small"
+                        value={selectedThemeOption}
+                        onChange={handleThemeChange}
+                        aria-label="Theme"
                     >
-                        <span>
-                            <FormControlLabel
-                                sx={{ gap: 0.5 }}
-                                control={
-                                    <Switch
-                                        size="small"
-                                        checked={isDarkMode()}
-                                        disabled={settings?.general?.colorScheme === MULEDUMP_COLOR_SCHEME}
-                                        onChange={() => colorContext.toggleColorMode()}
-                                    />
-                                }
-                                label={'Darkmode'}
-                            />
-                        </span>
-                    </Tooltip>
+                        <ToggleButton value="eam-dark" aria-label="EAM dark theme">
+                            Dark
+                        </ToggleButton>
+                        <ToggleButton value="eam-light" aria-label="EAM light theme">
+                            Light
+                        </ToggleButton>
+                        <ToggleButton value={MULEDUMP_COLOR_SCHEME} aria-label="Muledump theme">
+                            Muledump
+                        </ToggleButton>
+                    </ToggleButtonGroup>
                 </Box>
             </ComponentBox>
 
