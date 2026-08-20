@@ -38,6 +38,10 @@ import { enable, isEnabled, disable } from '@tauri-apps/plugin-autostart'
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
 import SyncOutlinedIcon from '@mui/icons-material/SyncOutlined';
 import DiscordLogo from './../components/DiscordLogo';
+import {
+    DEFAULT_COLOR_SCHEME,
+    MULEDUMP_COLOR_SCHEME,
+} from '../themes/muledump';
 
 function SettingsPage() {
     const userSettings = useUserSettings();
@@ -234,6 +238,9 @@ function SettingsPage() {
     }, [analyticsSettings?.optOut]);
 
     const isDarkMode = () => {
+        if (settings?.general?.colorScheme === MULEDUMP_COLOR_SCHEME)
+            return true;
+
         if (settings === undefined || settings.general === undefined || settings.general.theme === undefined)
             return true;
 
@@ -927,16 +934,59 @@ function SettingsPage() {
                 icon={<DarkModeOutlinedIcon />}
             >
                 <Typography variant="body2" color="text.secondary">
-                    Choose which theme should be used... of course only dark mode is the correct choice.
+                    Choose EAM's color scheme and brightness.
                 </Typography>
                 <Box
                     sx={{
                         mt: 1,
                         ml: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: 1.5,
                     }}
                 >
-                    <Tooltip title={isDarkMode() ? "Burn your eyes!" : "Come to the dark side, we have cookies!"}>
-                        <FormControlLabel sx={{ gap: 0.5 }} control={<Switch size="small" checked={isDarkMode()} onChange={() => colorContext.toggleColorMode()} />} label={'Darkmode'} />
+                    <FormControl size="small" sx={{ minWidth: 190 }}>
+                        <InputLabel id="color-scheme-select-label">Color scheme</InputLabel>
+                        <Select
+                            labelId="color-scheme-select-label"
+                            label="Color scheme"
+                            value={settings?.general?.colorScheme || DEFAULT_COLOR_SCHEME}
+                            onChange={(event) => {
+                                setSettings({
+                                    ...settings,
+                                    general: {
+                                        ...settings.general,
+                                        colorScheme: event.target.value,
+                                    },
+                                });
+                            }}
+                        >
+                            <MenuItem value={DEFAULT_COLOR_SCHEME}>EAM</MenuItem>
+                            <MenuItem value={MULEDUMP_COLOR_SCHEME}>Muledump</MenuItem>
+                        </Select>
+                    </FormControl>
+                    <Tooltip
+                        title={settings?.general?.colorScheme === MULEDUMP_COLOR_SCHEME
+                            ? "Muledump uses its original dark palette."
+                            : isDarkMode()
+                                ? "Burn your eyes!"
+                                : "Come to the dark side, we have cookies!"}
+                    >
+                        <span>
+                            <FormControlLabel
+                                sx={{ gap: 0.5 }}
+                                control={
+                                    <Switch
+                                        size="small"
+                                        checked={isDarkMode()}
+                                        disabled={settings?.general?.colorScheme === MULEDUMP_COLOR_SCHEME}
+                                        onChange={() => colorContext.toggleColorMode()}
+                                    />
+                                }
+                                label={'Darkmode'}
+                            />
+                        </span>
                     </Tooltip>
                 </Box>
             </ComponentBox>
