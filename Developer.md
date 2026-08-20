@@ -37,7 +37,10 @@ set to the public HTTPS service URL when the Tauri binary is compiled.
 On startup, EAM downloads the latest manifest or an available diff. It retains
 the last-good manifest for offline startup and downloads content-addressed
 sprites only when the UI needs them. Downloaded sprites are SHA-256 verified and
-cached in application data.
+cached in application data. If neither the service nor a last-good manifest is
+available, EAM still starts in degraded mode and represents unknown items with a
+bundled question-mark sprite. An unavailable individual sprite uses the same
+temporary placeholder without storing it in the rendered-item cache.
 
 ## Developer tools
 

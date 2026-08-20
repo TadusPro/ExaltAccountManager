@@ -1,8 +1,51 @@
 import fameBonuses from "./fameBonuses";
 import playerStats from "./playerStats";
 
-export const items = {};
 export const ITEM_SPRITE_HASH_INDEX = 11;
+export const MISSING_ITEM_SPRITE_SOURCE = "/realm/missing-item.svg";
+
+const itemRecords = {};
+const missingItems = new Map();
+
+function missingItem(itemId) {
+    const normalizedId = String(itemId);
+    if (!missingItems.has(normalizedId)) {
+        const displayId = normalizedId === "0" ? "" : ` #${normalizedId}`;
+        missingItems.set(normalizedId, [
+            `Unknown item${displayId}`,
+            10,
+            -1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            false,
+            0,
+            false,
+            null,
+        ]);
+    }
+    return missingItems.get(normalizedId);
+}
+
+/**
+ * Existing EAM components index this object directly. Unknown numeric IDs are
+ * represented by a stable placeholder without polluting item enumeration.
+ */
+export const items = new Proxy(itemRecords, {
+    get(target, property, receiver) {
+        if (
+            typeof property === "string"
+            && property !== "-1"
+            && /^\d+$/.test(property)
+            && !Object.prototype.hasOwnProperty.call(target, property)
+        ) {
+            return missingItem(property);
+        }
+        return Reflect.get(target, property, receiver);
+    },
+});
 
 const SUPPORTED_ITEM_KINDS = new Set([
     "Equipment",
@@ -142,8 +185,7 @@ export function getRuntimeAssetCacheKey() {
 
 export function getRuntimeSpriteHash(item) {
     const spriteHash = item?.[ITEM_SPRITE_HASH_INDEX];
-    if (!/^[a-f0-9]{64}$/i.test(spriteHash || "")) {
-        throw new Error("This item has no valid live sprite hash.");
-    }
-    return spriteHash.toLowerCase();
+    return /^[a-f0-9]{64}$/i.test(spriteHash || "")
+        ? spriteHash.toLowerCase()
+        : null;
 }

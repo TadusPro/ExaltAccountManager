@@ -1,5 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
-import { getRuntimeSpriteHash, mergeRuntimeAssets } from "../assets/runtimeAssets";
+import {
+    getRuntimeSpriteHash,
+    mergeRuntimeAssets,
+    MISSING_ITEM_SPRITE_SOURCE,
+} from "../assets/runtimeAssets";
 
 const spritePromises = new Map();
 
@@ -18,11 +22,15 @@ export async function refreshRuntimeAssets(force = false) {
 /** Resolves one content-addressed sprite through Rust's verified disk cache. */
 export function getRuntimeItemSpriteSource(item) {
     const spriteHash = getRuntimeSpriteHash(item);
+    if (!spriteHash) {
+        return Promise.resolve(MISSING_ITEM_SPRITE_SOURCE);
+    }
     if (!spritePromises.has(spriteHash)) {
         const request = invoke("get_asset_sprite", { spriteHash })
             .catch((error) => {
                 spritePromises.delete(spriteHash);
-                throw error;
+                console.warn(`Using the missing-item sprite for ${spriteHash}:`, error);
+                return MISSING_ITEM_SPRITE_SOURCE;
             });
         spritePromises.set(spriteHash, request);
     }

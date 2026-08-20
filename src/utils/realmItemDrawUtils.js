@@ -1,5 +1,9 @@
 import { CACHE_PREFIX } from "../constants";
-import { getRuntimeAssetCacheKey, getRuntimeSpriteHash } from "../assets/runtimeAssets";
+import {
+    getRuntimeAssetCacheKey,
+    getRuntimeSpriteHash,
+    MISSING_ITEM_SPRITE_SOURCE,
+} from "../assets/runtimeAssets";
 import { getRuntimeItemSpriteSource } from "../backend/assetApi";
 
 export const RARITY_IMAGE_SOURCES = {
@@ -39,7 +43,7 @@ export const drawItemPromise = async (item, rarity = 0, itemPadding = 5) => {
     if (!item) return null;
 
     const isShiny = item[10];
-    const spriteHash = getRuntimeSpriteHash(item);
+    const spriteHash = getRuntimeSpriteHash(item) || "missing";
     const runtimeCacheKey = getRuntimeAssetCacheKey();
     const cacheKey = `${CACHE_PREFIX}drawItem:${runtimeCacheKey}-${spriteHash}-${rarity}-${itemPadding}-${isShiny ? 1 : 0}`;
     const cachedData = localStorage.getItem(cacheKey);
@@ -57,6 +61,7 @@ export const drawItemPromise = async (item, rarity = 0, itemPadding = 5) => {
     }
 
     const spriteSource = await getRuntimeItemSpriteSource(item);
+    const isMissingSprite = spriteSource === MISSING_ITEM_SPRITE_SOURCE;
     return new Promise((resolve, reject) => {
         const itemSize = 40;
         const canvasSize = itemSize + (2 * itemPadding);
@@ -74,8 +79,14 @@ export const drawItemPromise = async (item, rarity = 0, itemPadding = 5) => {
 
             const finalize = () => {
                 const imageUrl = canvas.toDataURL("image/png");
-                const cacheObject = { time: Date.now(), image: imageUrl };
-                localStorage.setItem(cacheKey, JSON.stringify(cacheObject));
+                if (!isMissingSprite) {
+                    try {
+                        const cacheObject = { time: Date.now(), image: imageUrl };
+                        localStorage.setItem(cacheKey, JSON.stringify(cacheObject));
+                    } catch (error) {
+                        console.warn("Unable to cache rendered item image", error);
+                    }
+                }
                 resolve(imageUrl);
             };
 

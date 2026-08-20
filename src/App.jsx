@@ -9,8 +9,8 @@ import { refreshRuntimeAssets } from "./backend/assetApi";
 
 function App() {
     const [hasTriggeredStartup, setHasTriggeredStartup] = useState(false);
-    const [assetsReady, setAssetsReady] = useState(false);
-    const [assetError, setAssetError] = useState(null);
+    const [assetStatus, setAssetStatus] = useState({ state: "loading", message: null });
+    const [assetRevision, setAssetRevision] = useState(0);
     const [assetRetry, setAssetRetry] = useState(0);
     const { hwid } = useHWID();
 
@@ -57,18 +57,26 @@ function App() {
 
     useEffect(() => {
         let cancelled = false;
-        setAssetsReady(false);
-        setAssetError(null);
+        setAssetStatus({ state: "loading", message: null });
 
         refreshRuntimeAssets()
-            .then(() => {
-                if (!cancelled) setAssetsReady(true);
+            .then((manifest) => {
+                if (!cancelled) {
+                    if (assetRetry > 0) {
+                        setAssetRevision((revision) => revision + 1);
+                    }
+                    setAssetStatus(manifest.clientCache?.warning
+                        ? { state: "cached", message: manifest.clientCache.warning }
+                        : { state: "ready", message: null });
+                }
             })
             .catch((error) => {
                 if (!cancelled) {
                     console.error("Failed to load live game data:", error);
-                    setAssetsReady(true);
-                    setAssetError(error?.message || "Unable to load live game assets.");
+                    setAssetStatus({
+                        state: "degraded",
+                        message: error?.message || "Unable to load live game assets.",
+                    });
                 }
             });
 
@@ -86,31 +94,43 @@ function App() {
         setHasTriggeredStartup(true);
     }, [hwid]);
 
-    if (!assetsReady) {
-        return (
-            <div style={{ display: "grid", minHeight: "100vh", placeItems: "center", color: "#fff", backgroundColor: "#121212" }}>
-                Loading live game data…
-            </div>
-        );
-    }
-
-    if (assetError) {
-        return (
-            <div style={{ display: "grid", gap: "1rem", minHeight: "100vh", placeItems: "center", color: "#fff", backgroundColor: "#121212", textAlign: "center" }}>
-                <div>
-                    <div>Live game data is required to run EAM.</div>
-                    <div style={{ fontSize: "0.85rem", marginTop: "0.5rem", opacity: 0.75 }}>{assetError}</div>
-                </div>
-                <button type="button" onClick={() => setAssetRetry((value) => value + 1)}>
-                    Retry download
-                </button>
-            </div>
-        );
-    }
-
     return (
         <ColorContextProvider>
-            <MainProviders />
+            <MainProviders key={assetRevision} />
+            {(assetStatus.state === "degraded" || assetStatus.state === "cached") && (
+                <div
+                    title={assetStatus.message || undefined}
+                    style={{
+                        position: "fixed",
+                        right: "1rem",
+                        bottom: "1rem",
+                        zIndex: 10000,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.75rem",
+                        maxWidth: "28rem",
+                        padding: "0.75rem 1rem",
+                        color: "#fff",
+                        background: "#332f48",
+                        border: "1px solid #8f8aa8",
+                        borderRadius: "0.5rem",
+                        boxShadow: "0 0.4rem 1.2rem rgba(0, 0, 0, 0.35)",
+                    }}
+                >
+                    <span>
+                        {assetStatus.state === "cached"
+                            ? "Using cached game data while the asset service is unavailable."
+                            : "Game data is unavailable. Unknown items will use question-mark placeholders."}
+                    </span>
+                    <button
+                        type="button"
+                        onClick={() => setAssetRetry((value) => value + 1)}
+                        style={{ whiteSpace: "nowrap" }}
+                    >
+                        Retry
+                    </button>
+                </div>
+            )}
         </ColorContextProvider>
     );
 }
