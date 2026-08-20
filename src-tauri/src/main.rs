@@ -5,7 +5,7 @@ mod asset_sync;
 
 extern crate dirs;
 
-use asset_sync::refresh_asset_cache_from_game;
+use asset_sync::{get_asset_sprite_data_url, refresh_asset_cache_from_api};
 use diesel::r2d2::ConnectionManager;
 use eam_background_sync::types::SyncMode;
 use eam_background_sync::BackgroundSyncManager;
@@ -212,7 +212,6 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_http::init())
-        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_drpc::init())
@@ -239,6 +238,7 @@ fn main() {
             check_for_game_update,
             perform_game_update,
             refresh_asset_cache,
+            get_asset_sprite,
             send_get_request, // HTTP Requests
             send_get_request_with_json_body,
             send_post_request,
@@ -620,15 +620,12 @@ async fn send_post_request_get_redirect_url(
 
 #[tauri::command]
 async fn refresh_asset_cache(app: AppHandle, force: bool) -> Result<Value, String> {
-    let game_exe_path = resolve_game_exe_path().await;
-    refresh_asset_cache_from_game(app, force, game_exe_path).await
+    refresh_asset_cache_from_api(app, force).await
 }
 
-async fn resolve_game_exe_path() -> String {
-    match get_user_data_by_key("game_exe_path".to_string()).await {
-        Ok(data) if !data.dataValue.trim().is_empty() => data.dataValue,
-        _ => eam_commons::paths::get_default_game_path(),
-    }
+#[tauri::command]
+async fn get_asset_sprite(app: AppHandle, sprite_hash: String) -> Result<String, String> {
+    get_asset_sprite_data_url(app, sprite_hash).await
 }
 
 #[tauri::command]
@@ -680,7 +677,7 @@ fn check_for_game_update_impl(
 }
 
 #[tauri::command]
-async fn perform_game_update(app: AppHandle) -> Result<bool, Error> {
+async fn perform_game_update() -> Result<bool, Error> {
     let (tx, rx) = channel();
     info!("Performing game update...");
     thread::spawn(move || match POOL.lock() {
@@ -695,18 +692,7 @@ async fn perform_game_update(app: AppHandle) -> Result<bool, Error> {
     });
 
     match rx.recv().unwrap() {
-        Ok(result) => {
-            if result {
-                let game_exe_path = resolve_game_exe_path().await;
-                refresh_asset_cache_from_game(app, true, game_exe_path)
-                    .await
-                    .map_err(|error| {
-                        tauri::Error::from(std::io::Error::new(ErrorKind::Other, error))
-                    })?;
-            }
-
-            Ok(result)
-        }
+        Ok(result) => Ok(result),
         Err(e) => {
             error!("Error while performing game update: {}", e);
             Err(tauri::Error::from(std::io::Error::new(

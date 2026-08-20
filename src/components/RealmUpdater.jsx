@@ -11,7 +11,6 @@ import useSnack from '../hooks/useSnack';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { invoke } from '@tauri-apps/api/core';
-import { refreshRuntimeAssets } from '../backend/assetApi';
 
 function RealmUpdater() {
     const [isLoading, setIsLoading] = useState(false);
@@ -150,15 +149,12 @@ function RealmUpdater() {
                                     throw new Error('Realm Updater did not complete successfully.');
                                 }
 
-                                // The native updater regenerates the local render cache after
-                                // repairing Realm. Reload that cache into the running frontend.
-                                await refreshRuntimeAssets();
                                 localStorage.removeItem('updateNeeded');
                                 setUpdateRequired(false);
-                                showSnackbar('Realm and EAM item assets updated', 'success');
+                                showSnackbar('Realm updated', 'success');
                             } catch (error) {
-                                console.error('Failed to update Realm and EAM assets', error);
-                                showSnackbar('Failed to update Realm and EAM assets', 'error');
+                                console.error('Failed to update Realm', error);
+                                showSnackbar('Failed to update Realm', 'error');
                             } finally {
                                 sessionStorage.setItem('updateInProgress', 'false');
                                 setIsLoading(false);

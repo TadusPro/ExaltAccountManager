@@ -480,7 +480,6 @@ function StorageView({ vaultName, canvasIdentifier, title, itemIds, totals, over
             <Collapse in={!hideStorage}>
                 <ItemCanvas
                     canvasIdentifier={canvasIdentifier}
-                    imgSrc="renders.png"
                     itemIds={filteredItemIds}
                     items={items}
                     totals={totals}

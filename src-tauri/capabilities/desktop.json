@@ -11,17 +11,6 @@
   "permissions": [
     "updater:default",
     "fs:default",
-    "shell:default",
-    {
-      "identifier": "shell:allow-execute",
-      "allow": [
-        {
-          "name": "binaries/eam-asset-extractor",
-          "sidecar": true,
-          "args": true
-        }
-      ]
-    },
     "http:default",
     "process:default",
     "dialog:default",

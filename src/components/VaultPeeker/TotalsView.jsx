@@ -81,7 +81,6 @@ function TotalsView() {
         >
             <ItemCanvas
                 canvasIdentifier="totals"
-                imgSrc="renders.png"
                 itemIds={filteredItems}
                 items={items}
                 totals={totalItems?.totals ? totalItems.totals : {}}

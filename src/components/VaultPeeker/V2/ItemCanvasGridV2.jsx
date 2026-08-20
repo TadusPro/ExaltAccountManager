@@ -6,8 +6,6 @@ import { TooltipUiForItem } from '../../Widgets/Widgets/Components/InventoryRend
 import useVaultPeeker from '../../../hooks/useVaultPeeker';
 import useDebugLogs from './../../../hooks/useDebugLogs';
 
-const SPRITESHEET_SRC = "renders.png";
-
 // In-memory cache for HTMLImageElement objects (survives re-renders, cleared on page reload)
 const imageElementCache = new Map();
 
@@ -66,7 +64,7 @@ const preloadAllItemImages = async (itemEntries, itemPadding, debugLogs = false)
         cacheMisses++;
 
         try {
-            const imageUrl = await drawItemPromise(SPRITESHEET_SRC, item, rarity, itemPadding);
+            const imageUrl = await drawItemPromise(item, rarity, itemPadding);
             const img = new Image();
             await new Promise((resolve, reject) => {
                 img.onload = resolve;

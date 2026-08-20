@@ -104,7 +104,7 @@ function ItemGridV2({
                 } else {
                     const itemData = items[itemId];
                     if (itemData) {
-                        imageSrc = await drawItemAsync("renders.png", itemData, maxRarity, itemPadding);
+                        imageSrc = await drawItemAsync(itemData, maxRarity, itemPadding);
                     }
                 }
 

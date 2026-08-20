@@ -12,7 +12,6 @@ function App() {
     const [assetsReady, setAssetsReady] = useState(false);
     const [assetError, setAssetError] = useState(null);
     const [assetRetry, setAssetRetry] = useState(0);
-    const [repairingAssets, setRepairingAssets] = useState(false);
     const { hwid } = useHWID();
 
     useEffect(() => {
@@ -67,6 +66,7 @@ function App() {
             })
             .catch((error) => {
                 if (!cancelled) {
+                    console.error("Failed to load live game data:", error);
                     setAssetsReady(true);
                     setAssetError(error?.message || "Unable to load live game assets.");
                 }
@@ -86,53 +86,24 @@ function App() {
         setHasTriggeredStartup(true);
     }, [hwid]);
 
-    const repairRealmAssets = async () => {
-        setRepairingAssets(true);
-        setAssetsReady(false);
-        setAssetError(null);
-
-        try {
-            const updateNeeded = await invoke('check_for_game_update', { force: true });
-            if (updateNeeded) {
-                const updateSucceeded = await invoke('perform_game_update');
-                if (!updateSucceeded) {
-                    throw new Error('Realm Updater did not complete successfully.');
-                }
-            }
-            setAssetRetry((value) => value + 1);
-        } catch (error) {
-            setAssetsReady(true);
-            setAssetError(error?.message || "Unable to update Realm game assets.");
-        } finally {
-            setRepairingAssets(false);
-        }
-    };
-
     if (!assetsReady) {
         return (
-            <div style={{ display: "grid", minHeight: "100vh", placeItems: "center", color: "#fff" }}>
-                {repairingAssets
-                    ? "Realm Updater is repairing the installed client…"
-                    : "Loading item assets from the installed Realm client…"}
+            <div style={{ display: "grid", minHeight: "100vh", placeItems: "center", color: "#fff", backgroundColor: "#121212" }}>
+                Loading live game data…
             </div>
         );
     }
 
     if (assetError) {
         return (
-            <div style={{ display: "grid", gap: "1rem", minHeight: "100vh", placeItems: "center", color: "#fff", textAlign: "center" }}>
+            <div style={{ display: "grid", gap: "1rem", minHeight: "100vh", placeItems: "center", color: "#fff", backgroundColor: "#121212", textAlign: "center" }}>
                 <div>
-                    <div>Live game assets are required to run EAM.</div>
+                    <div>Live game data is required to run EAM.</div>
                     <div style={{ fontSize: "0.85rem", marginTop: "0.5rem", opacity: 0.75 }}>{assetError}</div>
                 </div>
-                <div style={{ display: "flex", gap: "0.75rem" }}>
-                    <button type="button" onClick={() => setAssetRetry((value) => value + 1)}>
-                        Retry extraction
-                    </button>
-                    <button type="button" disabled={repairingAssets} onClick={repairRealmAssets}>
-                        Run Realm Updater
-                    </button>
-                </div>
+                <button type="button" onClick={() => setAssetRetry((value) => value + 1)}>
+                    Retry download
+                </button>
             </div>
         );
     }

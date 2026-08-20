@@ -146,7 +146,7 @@ function ExportModalV2({ open, onClose, items: itemsData = [] }) {
             try {
                 const itemData = items[itemId];
                 if (itemData) {
-                    const imageSrc = await drawItemAsync("renders.png", itemData, maxRarity, itemPadding);
+                    const imageSrc = await drawItemAsync(itemData, maxRarity, itemPadding);
                     if (imageSrc) {
                         const img = new Image();
                         img.src = imageSrc;
